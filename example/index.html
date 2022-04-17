@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Tagly Example</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+            integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    </head>
+
+    <body>
+        <div class="py-3">
+            <div class="container">
+                <h1>Tagly Examples</h1>
+                <hr>
+                <div class="mb-4">
+                    <h5>Default configuration</h5>
+                    <div class="row">
+                        <div class="col-lg-6 mb-3">
+                            <div id="default"></div>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <h5><button class="btn btn-sm btn-dark" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#default-example" aria-expanded="false"
+                                    aria-controls="default-example">
+                                    Show Code
+                                </button></h5>
+                            <div class="collapse" id="default-example">
+                                <script
+                                    src="https://gist.github.com/kykurniawan/94d90a1260700df78c390a9e2e59529f.js?file=tagly-example.js"></script>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <h5>With bootstrap class</h5>
+                    <div class="row">
+                        <div class="col-lg-6 mb-3">
+                            <div id="bootstrap"></div>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <h5><button class="btn btn-sm btn-dark" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#bootstrap-example" aria-expanded="false"
+                                    aria-controls="bootstrap-example">
+                                    Show Code
+                                </button></h5>
+                            <div class="collapse" id="bootstrap-example">
+                                <script
+                                    src="https://gist.github.com/kykurniawan/94d90a1260700df78c390a9e2e59529f.js?file=with-bootstrap-class.js"></script>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <h5>With event listener</h5>
+                    <div class="row">
+                        <div class="col-lg-6 mb-3">
+                            <div id="event"></div>
+                            <h6 class="mt-3">On Changed Events</h6>
+                            Last values: <span id="changed-event">[]</span>
+                            <h6 class="mt-3">On Added Events</h6>
+                            Last added value: <span id="added-event">{}</span>
+                            <h6 class="mt-3">On Removed Events</h6>
+                            Last removed value: <span id="removed-event">{}</span>
+                            <h6 class="mt-3">On Error Events</h6>
+                            <div><small>to show error, input non alphanumeric character</small></div>
+                            Error: <span id="error-event"></span>
+
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <h5><button class="btn btn-sm btn-dark" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#event-example" aria-expanded="false" aria-controls="event-example">
+                                    Show Code
+                                </button></h5>
+                            <div class="collapse" id="event-example">
+                                <script
+                                    src="https://gist.github.com/kykurniawan/94d90a1260700df78c390a9e2e59529f.js?file=with-event.js"></script>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+            crossorigin="anonymous"></script>
+
+        <script src="../dist/tagly.min.js"></script>
+        <script>
+            const taglyDefault = new Tagly(document.getElementById("default"))
+
+            taglyDefault.addEventListener('changed', ({ detail }) => {
+                console.log(detail)
+            })
+
+            const bootstrapConfig = {
+                clearDefaultStyle: true,
+                wrapperClasses: [
+                    'border',
+                    'p-3',
+                    'rounded',
+                ],
+                previewClasses: [
+                    'd-block',
+                    'mb-2'
+                ],
+                previewItemClasses: [
+                    'badge',
+                    'bg-primary',
+                    'me-1'
+                ],
+                deleteItemButtonClasses: [
+                    'badge',
+                    'badge-sm',
+                    'bg-danger',
+                    'me-2',
+                    'border-0',
+                    'p-1'
+                ],
+                inputClasses: [
+                    'form-control'
+                ],
+                errorClasses: [
+                    'badge',
+                    'rounded-0',
+                    'bg-danger',
+                    'text-light',
+                    'mb-3'
+                ]
+            }
+
+            const taglyBootstrap = new Tagly(document.getElementById('bootstrap'), bootstrapConfig)
+
+
+            const taglyEvent = new Tagly(document.getElementById("event"))
+
+            taglyEvent.addEventListener('changed', ({ detail }) => {
+                document.getElementById('changed-event').innerText = JSON.stringify(detail)
+            })
+            taglyEvent.addEventListener('added', ({ detail }) => {
+                document.getElementById('added-event').innerText = JSON.stringify(detail)
+            })
+            taglyEvent.addEventListener('removed', ({ detail }) => {
+                document.getElementById('removed-event').innerText = JSON.stringify(detail)
+            })
+            taglyEvent.addEventListener('error', ({ detail }) => {
+                document.getElementById('error-event').innerText = JSON.stringify(detail)
+            })
+        </script>
+    </body>
+
+</html>
