@@ -1,7 +1,7 @@
 {
-  "name": "@rizkykurniawan/tagly",
+  "name": "@kykurniawan/tagly",
   "version": "1.0.0",
-  "description": "Simple html tag input",
+  "description": "Simple HTML tag input",
   "main": "./dist/tagly.min.js",
   "scripts": {
     "build": "webpack",
@@ -11,7 +11,7 @@
     "tag",
     "input"
   ],
-  "author": "rizkykurniawan",
+  "author": "Rizky Kurniawan",
   "license": "MIT",
   "dependencies": {
     "webpack": "^5.72.0",
@@ -25,5 +25,5 @@
   "bugs": {
     "url": "https://github.com/kykurniawan/tagly/issues"
   },
-  "homepage": "https://github.com/kykurniawan/tagly#readme"
+  "homepage": "https://kykurniawan.gitbook.io/tagly/"
 }
