@@ -9,6 +9,7 @@ export default class extends EventTarget {
         this._autocompleteReady = true
         this._error = ''
         this._liveInputValue = ''
+        this._typing = false
 
         this._validateElement(element)
         this._validateConfig(config)
@@ -61,8 +62,8 @@ export default class extends EventTarget {
         if (config.sendAsJSON == undefined) {
             config.sendAsJSON = false
         }
-        if (config.showAutocomplete == undefined) {
-            config.showAutocomplete = false
+        if (config.autocomplete == undefined) {
+            config.autocomplete = false
         }
         if (config.autocompleteItems != undefined) {
             this._autocompleteItems = config.autocompleteItems
@@ -92,6 +93,7 @@ export default class extends EventTarget {
         this._setInputStyle(input)
         this._setInputClass(input)
         input.setAttribute('id', this._id + '__input')
+        input.setAttribute('autocomplete', 'off')
         if (this._config.placeholder != undefined) {
             input.placeholder = this._config.placeholder
         } else {
@@ -166,9 +168,20 @@ export default class extends EventTarget {
         })
 
         this._input.addEventListener('keypress', evt => {
-            if (evt.key == 'Enter' || evt.key == ',') {
+            if (evt.key == 'Enter') {
                 evt.preventDefault()
                 let tag = this._sanitizeTag(evt.target.value)
+                if (tag != '') {
+                    this._addValue(this._createValueObject(tag))
+                }
+                evt.target.value = ''
+                this._resetAutocomplete()
+            }
+        })
+
+        this._input.addEventListener('keyup', evt => {
+            if (evt.target.value != '' && evt.target.value.charAt(evt.target.value.length - 1) == ',') {
+                let tag = this._sanitizeTag(evt.target.value.slice(0, -1))
                 if (tag != '') {
                     this._addValue(this._createValueObject(tag))
                 }
@@ -185,15 +198,33 @@ export default class extends EventTarget {
             this._resetAutocomplete()
         })
 
+        let typingTimeout
         this._input.addEventListener('input', evt => {
+            this._autocompleteReady = true
             this._liveInputValue = evt.target.value
-            this._triggerEvent('input', evt.target.value)
             if (this._config.autocomplete) {
-                this._triggerEvent('before-autocomplete', evt.target.value)
+                this._showAutocompleteLoader()
+            }
+
+            this._triggerEvent('input', evt.target.value)
+
+            if (this._typing == false) {
+                this._triggerEvent('typing', {})
+                this._typing = true
+            }
+
+            clearTimeout(typingTimeout)
+            typingTimeout = setTimeout(() => {
+                this._triggerEvent('done-typing', {
+                    autocomplete: this._autocomplete()
+                })
+
                 if (this._autocompleteReady) {
                     this._showAutocomplete(evt.target.value)
                 }
-            }
+
+                this._typing = false
+            }, 300, evt)
         })
     }
 
@@ -354,9 +385,9 @@ export default class extends EventTarget {
         deleteItemButton.tabIndex = '-1'
         deleteItemButton.innerHTML = '&#10007;'
         if (
-            this._config.deleteItemButtonInnerHTML != undefined &&
-            this._config.deleteItemButtonInnerHTML != '') {
-            deleteItemButton.innerHTML = this._config.deleteItemButtonInnerHTML
+            this._config.deleteItemButtonHTML != undefined &&
+            this._config.deleteItemButtonHTML != '') {
+            deleteItemButton.innerHTML = this._config.deleteItemButtonHTML
         }
         this._setDeleteItemButtonStyle(deleteItemButton)
         this._setDeleteItemButtonClass(deleteItemButton)
@@ -384,75 +415,100 @@ export default class extends EventTarget {
     _triggerEvent(name, detail) {
         switch (name) {
             case 'changed':
-                const onChanged = new CustomEvent('changed', {
+                this.dispatchEvent(new CustomEvent('changed', {
                     detail: detail
-                })
-                this.dispatchEvent(onChanged)
+                }))
                 break
             case 'added':
-                const onAdded = new CustomEvent('added', {
+                this.dispatchEvent(new CustomEvent('added', {
                     detail: detail
-                })
-                this.dispatchEvent(onAdded)
+                }))
                 break
             case 'removed':
-                const onRemoved = new CustomEvent('removed', {
+                this.dispatchEvent(new CustomEvent('removed', {
                     detail: detail
-                })
-                this.dispatchEvent(onRemoved)
+                }))
                 break
             case 'error':
-                const onError = new CustomEvent('error', {
+                this.dispatchEvent(new CustomEvent('error', {
                     detail: detail
-                })
-                this.dispatchEvent(onError)
+                }))
                 break
             case 'paste':
-                const onPaste = new CustomEvent('paste', {
+                this.dispatchEvent(new CustomEvent('paste', {
                     detail: detail
-                })
-                this.dispatchEvent(onPaste)
+                }))
                 break
             case 'duplicate':
-                const onDuplicate = new CustomEvent('duplicate', {
+                this.dispatchEvent(new CustomEvent('duplicate', {
                     detail: detail
-                })
-                this.dispatchEvent(onDuplicate)
+                }))
                 break
             case 'input':
-                const onInput = new CustomEvent('input', {
+                this.dispatchEvent(new CustomEvent('input', {
                     detail: detail
-                })
-                this.dispatchEvent(onInput)
+                }))
                 break
-            case 'before-autocomplete':
-                const onBeforeAutocomplete = new CustomEvent('before-autocomplete', {
+            case 'typing':
+                this.dispatchEvent(new CustomEvent('typing', {
                     detail: detail
-                })
-                this.dispatchEvent(onBeforeAutocomplete)
+                }))
+                break
+            case 'done-typing':
+                this.dispatchEvent(new CustomEvent('done-typing', {
+                    detail: detail
+                }))
                 break
             default:
                 break
         }
     }
 
-    _resetAutocomplete() {
-        if (this._config.autocomplete == false) return
+    _autocomplete() {
+        return {
+            active: this._config.autocomplete,
+            search: this._liveInputValue,
+            pause: () => {
+                if (this._config.autocomplete == false) return false
+                this._autocompleteReady = false
+            },
+            continue: (items = null) => {
+                if (this._config.autocomplete == false) return false
+                if (Object.prototype.toString.call(items) != '[object Array]' && items != null) {
+                    throw new Error('continue function only accept array of autocomplete items')
+                } else {
+                    if (items != null && items.length > 0) {
+                        this._autocompleteItems = items
+                    }
+                    this._showAutocomplete(this._liveInputValue)
+                }
+            },
+        }
+    }
 
-        this._autocompleteWrapper.removeAttribute('style')
-        this._autocompleteWrapper.removeAttribute('class')
-        this._autocompleteWrapper.querySelector(`#${this._id}__autocomplete-container`).removeAttribute('style')
-        this._autocompleteWrapper.querySelector(`#${this._id}__autocomplete-container`).removeAttribute('class')
-        this._autocompleteWrapper.querySelector(`#${this._id}__autocomplete-container`).innerHTML = ''
+    _resetAutocomplete() {
+        if (this._config.autocomplete != false) {
+            this._autocompleteWrapper.removeAttribute('style')
+            this._autocompleteWrapper.removeAttribute('class')
+            this._autocompleteWrapper.querySelector(`#${this._id}__autocomplete-container`).removeAttribute('style')
+            this._autocompleteWrapper.querySelector(`#${this._id}__autocomplete-container`).removeAttribute('class')
+            this._autocompleteWrapper.querySelector(`#${this._id}__autocomplete-container`).innerHTML = ''
+        }
     }
 
     _showAutocomplete(inputValue) {
+        if (this._config.autocomplete == false) {
+            return false
+        }
         this._resetAutocomplete()
+        this._hideAutocompleteLoader()
         const wrapper = this._autocompleteWrapper
         const container = this._autocompleteContainer
         const items = this._autocompleteItems
 
-        if (!inputValue) return false
+        if (!inputValue) {
+            return false
+        }
 
         for (let i = 0; i < items.length; i++) {
             const search = this._regexSearch(items[i], inputValue)
@@ -505,9 +561,6 @@ export default class extends EventTarget {
         }
     }
 
-    /**
-     * Functions to add style and class to the elements
-     */
     _setWrapperStyle(wrapper) {
         if (this._config.clearDefaultStyles == false) {
             wrapper.style.border = '1px solid black'
@@ -679,8 +732,58 @@ export default class extends EventTarget {
         }
     }
 
+    _setAutocompleteLoaderStyle(loader) {
+        if (this._config.clearDefaultStyles == false) {
+            loader.style.padding = '3px 5px'
+            loader.style.display = 'inline-block'
+            loader.style.marginRight = '5px'
+            loader.style.marginBottom = '5px'
+            loader.style.backgroundColor = 'rgb(239, 239, 239)'
+            loader.style.color = '#000000'
+            loader.style.position = 'absolute'
+        }
+        if (this._config.autocompleteLoaderStyles != undefined) {
+            for (const [key, value] of Object.entries(this._config.autocompleteLoaderStyles)) {
+                loader.style[key] = value
+            }
+        }
+    }
+
+    _setAutocompleteLoaderClass(loader) {
+        if (this._config.autocompleteLoaderClasses != undefined) {
+            loader.setAttribute('class', this._config.autocompleteLoaderClasses)
+        }
+    }
+
     _isElement(o) {
         return o instanceof HTMLElement
+    }
+
+    _showAutocompleteLoader() {
+        if (this._config.autocomplete == false) return false
+
+        this._hideAutocompleteLoader()
+        if (this._liveInputValue != '') {
+            const loader = document.createElement('span')
+            loader.setAttribute('id', this._id + '__autocomplete-loader')
+            this._setAutocompleteLoaderStyle(loader)
+            this._setAutocompleteLoaderClass(loader)
+            if (this._config.autocompleteLoaderHTML != undefined && this._config.autocompleteLoaderHTML != '') {
+                loader.innerHTML = this._config.autocompleteLoaderHTML
+            } else {
+                loader.innerHTML = 'Please wait...'
+            }
+            this._autocompleteContainer.innerHTML = ''
+            this._element.append(loader)
+        }
+    }
+
+    _hideAutocompleteLoader() {
+        if (this._config.autocomplete == false) return false
+
+        if (this._element.querySelector('#' + this._id + '__autocomplete-loader')) {
+            this._element.querySelector('#' + this._id + '__autocomplete-loader').remove()
+        }
     }
 
     getValues(jusTag = false) {
@@ -690,7 +793,7 @@ export default class extends EventTarget {
         return this._values
     }
 
-    getValuesJSON(jusTag = false) {
+    getJSONValues(jusTag = false) {
         if (jusTag) {
             return JSON.stringify(this._values.map(value => value.tag))
         }
@@ -699,27 +802,6 @@ export default class extends EventTarget {
 
     getRawValues() {
         return this.getValues(true).join(',')
-    }
-
-    getAutocompleteItems() {
-        if (this._autocompleteItems.length < 1) {
-            if (this._element.hasAttribute('data-autocomplete')) {
-                const rawAutocomplete = this._element.getAttribute('data-autocomplete')
-                return rawAutocomplete.split(',')
-            }
-            return []
-        }
-        return this._autocompleteItems
-    }
-
-    showAutocomplete(items) {
-        this._autocompleteItems = items
-        this._showAutocomplete(this._liveInputValue)
-        this._autocompleteReady = true
-    }
-
-    pauseAutocomplete() {
-        this._autocompleteReady = false
     }
 
     setError(message) {

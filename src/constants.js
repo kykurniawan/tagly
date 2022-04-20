@@ -85,7 +85,7 @@ export const configItems = [
         validate: (value) => Object.prototype.toString.call(value) == '[object String]'
     },
     {
-        item: 'deleteItemButtonInnerHTML',
+        item: 'deleteItemButtonHTML',
         type: 'String',
         validate: (value) => Object.prototype.toString.call(value) == '[object String]'
     },
@@ -136,6 +136,21 @@ export const configItems = [
     },
     {
         item: 'autocompleteItemClasses',
+        type: 'String',
+        validate: (value) => Object.prototype.toString.call(value) == '[object String]'
+    },
+    {
+        item: 'autocompleteLoaderHTML',
+        type: 'String',
+        validate: (value) => Object.prototype.toString.call(value) == '[object String]'
+    },
+    {
+        item: 'autocompleteLoaderStyles',
+        type: 'Object',
+        validate: (value) => Object.prototype.toString.call(value) == '[object Object]'
+    },
+    {
+        item: 'autocompleteLoaderClasses',
         type: 'String',
         validate: (value) => Object.prototype.toString.call(value) == '[object String]'
     },
